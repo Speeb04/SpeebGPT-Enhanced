@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from google import genai
 from google.genai import types
 
@@ -91,9 +93,12 @@ class GoogleAPIGateway(metaclass=Singleton):
         """Takes in message content and converts it into an SEO term for web
         searches (for messages that have the web search flag.)"""
 
-        instructions = ("Read the content of the user message and create an SEO term for one web search that can answer"
-                        "the user's query. Return only the SEO term and nothing else. So, for example, if the query is"
-                        "'who won the super bowl?', the response would be 'super bowl'.")
+        instructions = (f"Read the content of the user message and create an SEO term for one web search that can answer"
+                        f"the user's query. Return only the SEO term and nothing else. "
+                        f"Any references to time should also be included in the SEO term. Today is {datetime.strftime(datetime.now(), '%Y-%m-%d')}"
+                        f"in Y/M/D format."
+                        f"So, for example, if the query is"
+                        f"'who won the super bowl this year?', the response would be 'super bowl {datetime.strftime(datetime.now(), '%Y')}'.")
 
         return self.generate_response(instructions, content)
 
