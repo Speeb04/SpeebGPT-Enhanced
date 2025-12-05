@@ -216,7 +216,6 @@ def get_history_list(conversation: Conversation) -> list:
 async def create_search_response(discord_message: discord.Message,
                                  message: Message, conversation: Conversation) -> discord.Message:
     seo_optimized = google_gateway.search_engine_optimization(message.text_content)
-    print(seo_optimized)
     search_results = brave_search_gateway.concise_search(seo_optimized)
 
     summarize_results = ""
