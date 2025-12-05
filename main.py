@@ -128,7 +128,7 @@ SUPPORTED_IMAGES = ["png", "jpg", "jpeg", "webp", "gif"]
 SUPPORTED_FILES = ["pdf"]
 
 
-async def create_message(discord_message: discord.Message, role: str) -> Message:
+async def create_message(discord_message: discord.Message, role: str, has_reference = False) -> Message:
     text_content = discord_message.content
 
     images = []
@@ -144,13 +144,19 @@ async def create_message(discord_message: discord.Message, role: str) -> Message
         elif attachment.content_type == "application/pdf":
             files.append(File(attachment.filename, await attachment.read()))
 
-    new_message = Message(role, text_content, images, files)
+    if not has_reference:
+        new_message = Message(role, text_content, images, files)
+        return new_message
+
+    get_reference_message = await discord_message.channel.fetch_message(discord_message.reference.message_id)
+
+    message_content = f"> (Referencing): {get_reference_message.content}\n" + text_content
+    new_message = Message(role, message_content, images, files)
 
     return new_message
 
-
 async def message_response_pipeline(discord_message: discord.Message,
-                                    message: Message, conversation: Conversation):
+                                    message: Message, conversation: Conversation) -> discord.Message:
     # First, adds the message to the conversation
     # returns a message in the form of Message, with bot response.
 
@@ -162,23 +168,19 @@ async def message_response_pipeline(discord_message: discord.Message,
 
     match flag:
         case "--web":
-            await create_search_response(discord_message, message, conversation)
-            return
+            return await create_search_response(discord_message, message, conversation)
 
         case "--weather":
-            await create_weather_response(discord_message, message, conversation)
-            return
+            return await create_weather_response(discord_message, message, conversation)
 
         case "--song":
-            await create_song_response(discord_message, message, conversation)
-            return
+            return await create_song_response(discord_message, message, conversation)
 
         case "--artist":
-            await create_artist_response(discord_message, message, conversation)
-            return
+            return await create_artist_response(discord_message, message, conversation)
 
         case _:
-            await create_general_response(discord_message, conversation)
+            return await create_general_response(discord_message, conversation)
 
 
 def add_user_information(discord_message: discord.Message) -> str:
@@ -208,7 +210,7 @@ def get_history_list(conversation: Conversation) -> list:
 
 
 async def create_search_response(discord_message: discord.Message,
-                                 message: Message, conversation: Conversation):
+                                 message: Message, conversation: Conversation) -> discord.Message:
     seo_optimized = google_gateway.search_engine_optimization(message.text_content)
     search_results = brave_search_gateway.concise_search(seo_optimized)
 
@@ -228,10 +230,9 @@ async def create_search_response(discord_message: discord.Message,
 
     embed = generate_search_embed(seo_optimized, search_results)
 
-    sent_message = await discord_message.channel.send(response + DISCLAIMER, embed=embed)
+    sent_message = await discord_message.reply(response + DISCLAIMER, embed=embed)
 
-    message_history_list = get_history_list(conversation)
-    message_history_list.append(sent_message.id)
+    return sent_message
 
 
 def generate_search_embed(search_term: str, search_results: list[dict[str, str]]) -> Embed:
@@ -264,7 +265,7 @@ def weather_summary_string(weather_response: dict) -> str:
 
 
 async def create_weather_response(discord_message: discord.Message,
-                            message: Message, conversation: Conversation):
+                            message: Message, conversation: Conversation) -> discord.Message:
     get_location = google_gateway.attain_location_information(message.text_content)
     city, country = get_location.split(', ')
     weather_results = weather_gateway.weather_lookup(f"{city},{country}")
@@ -284,10 +285,9 @@ async def create_weather_response(discord_message: discord.Message,
 
     embed = generate_weather_embed(weather_results)
 
-    sent_message = await discord_message.channel.send(response + DISCLAIMER, embed=embed)
+    sent_message = await discord_message.reply(response + DISCLAIMER, embed=embed)
 
-    message_history_list = get_history_list(conversation)
-    message_history_list.append(sent_message.id)
+    return sent_message
 
 
 def generate_weather_embed(weather_response: dict) -> Embed:
@@ -333,7 +333,7 @@ def generate_weather_embed(weather_response: dict) -> Embed:
 
 
 async def create_song_response(discord_message: discord.Message,
-                                 message: Message, conversation: Conversation):
+                                 message: Message, conversation: Conversation) -> discord.Message:
     user_info = add_user_information(discord_message)
     if user_info == "":
         song_details = google_gateway.attain_song_information(message.text_content)
@@ -359,10 +359,9 @@ async def create_song_response(discord_message: discord.Message,
 
     embed = await generate_song_embed(song_info)
 
-    sent_message = await discord_message.channel.send(response + DISCLAIMER, embed=embed)
+    sent_message = await discord_message.reply(response + DISCLAIMER, embed=embed)
 
-    message_history_list = get_history_list(conversation)
-    message_history_list.append(sent_message.id)
+    return sent_message
 
 
 async def generate_song_embed(song_info: dict) -> Embed:
@@ -384,7 +383,7 @@ async def generate_song_embed(song_info: dict) -> Embed:
 
 
 async def create_artist_response(discord_message: discord.Message,
-                                 message: Message, conversation: Conversation):
+                                 message: Message, conversation: Conversation) -> discord.Message:
     user_info = add_user_information(discord_message)
     if user_info == "":
         artist_details = google_gateway.attain_artist_information(message.text_content)
@@ -406,10 +405,9 @@ async def create_artist_response(discord_message: discord.Message,
 
     embed = await generate_artist_embed(artist_info)
 
-    sent_message = await discord_message.channel.send(response + DISCLAIMER, embed=embed)
+    sent_message = await discord_message.reply(response + DISCLAIMER, embed=embed)
 
-    message_history_list = get_history_list(conversation)
-    message_history_list.append(sent_message.id)
+    return sent_message
 
 
 async def generate_artist_embed(artist_info: dict) -> Embed:
@@ -433,17 +431,16 @@ async def generate_artist_embed(artist_info: dict) -> Embed:
     return embed
 
 
-async def create_general_response(discord_message: discord.Message, conversation: Conversation):
+async def create_general_response(discord_message: discord.Message, conversation: Conversation) -> discord.Message:
     message_history = conversation.to_list_dict()
     response = openai_gateway.generate_response(message_history)
 
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
 
-    sent_message = await discord_message.channel.send(response + DISCLAIMER)
+    sent_message = await discord_message.reply(response + DISCLAIMER)
 
-    message_history_list = get_history_list(conversation)
-    message_history_list.append(sent_message.id)
+    return sent_message
 
 
 @client.event
@@ -468,8 +465,11 @@ async def on_message(discord_message: discord.Message):
 
     # At this point either we have received a conversation, or one has been created.
     async with discord_message.channel.typing():
-        new_message = await create_message(discord_message, "user")
-        await message_response_pipeline(discord_message, new_message, conversation)
+        new_message = await create_message(discord_message, "user", discord_message.reference is not None)
+        sent_message = await message_response_pipeline(discord_message, new_message, conversation)
+
+        message_history_list = get_history_list(conversation)
+        message_history_list.append(sent_message.id)
 
 
 @client.event

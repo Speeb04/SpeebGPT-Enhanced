@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from google import genai
 from google.genai import types
 
@@ -17,7 +19,7 @@ class GoogleAPIGateway(metaclass=Singleton):
     """
     _MODEL: str
 
-    def __init__(self, model: str = "gemini-2.5-flash"):
+    def __init__(self, model: str = "gemini-2.5-flash-lite"):
         self._MODEL = model
         self.client = genai.Client()
 
@@ -54,7 +56,7 @@ class GoogleAPIGateway(metaclass=Singleton):
                                 Mentions to songs in general without a specific mention, like "can you tell me about this
                                 artist's songs?" should default to the --artist flag.
     
-    artist (--artist):          anything to do with an artist (even if not explicitly mentioned).
+    artist (--artist):          anything to do with a music artist (even if not explicitly mentioned).
                                 an input like "who sang this song?" would fall into this category.
 
     weather (--weather):        anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
@@ -65,8 +67,12 @@ class GoogleAPIGateway(metaclass=Singleton):
                                 need a web search, so this flag would be omitted.
                                 Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
                                 should not receive the --web flag.
+                                
+                                If a user is searching for players relating to a sports team, like "who's the star player of
+                                the Toronto Blue Jays?" should get the --web flag.
                             
-    none of the above (--none): none of the above.
+    none of the above (--none): none of the above. Any message that mentions an image or a file (like, "what's in this image?")
+                                should get this flag.
                             
     Note: all personal opinions lack flags. Even content such as "do you like Never Gonna Give You Up by Rick Astley"
     lacks the --music flag as that is a matter of personal opinion.
@@ -91,8 +97,12 @@ class GoogleAPIGateway(metaclass=Singleton):
         """Takes in message content and converts it into an SEO term for web
         searches (for messages that have the web search flag.)"""
 
-        instructions = ("Read the content of the user message and create an SEO term for one web search that can answer"
-                        "the user's query.")
+        instructions = (f"Read the content of the user message and create an SEO term for one web search that can answer"
+                        f"the user's query. Return only the SEO term and nothing else. "
+                        f"Any references to time should also be included in the SEO term. Today is {datetime.strftime(datetime.now(), '%Y-%m-%d')}"
+                        f"in Y/M/D format."
+                        f"So, for example, if the query is"
+                        f"'who won the super bowl this year?', the response would be 'super bowl {datetime.strftime(datetime.now(), '%Y')}'.")
 
         return self.generate_response(instructions, content)
 

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import requests
 import os
-
-from lyricsgenius import Genius
 
 from gateways.singleton import Singleton
 
@@ -12,26 +11,20 @@ class GeniusAPIGateway(metaclass=Singleton):
     lazy to implement the http requests myself."""
 
     _GENIUS_API_KEY = os.environ.get("GENIUS_API_KEY")
-    genius: Genius
-
-    def __init__(self):
-        self.genius = Genius(self._GENIUS_API_KEY)
-
-        # Turns off the printed outputs.
-        self.genius.verbose = False
 
     def get_song_info(self, song: str, artist: str) -> dict:
         try:
-            song_id = self.genius.search(f"{song} {artist}")['hits'][0]['result']['id']
+            response = requests.get(f"https://api.genius.com/search?q={song} {artist}&access_token={self._GENIUS_API_KEY}")
+            song_id = response.json()['response']['hits'][0]['result']['id']
         except Exception:
             raise IOError(f"Could not find song {song} by {artist}")
 
-        song_info = self.genius.song(song_id)['song']
+        song_info = requests.get(f"https://api.genius.com/songs/{song_id}?"
+                                 f"text_format=plain&access_token={self._GENIUS_API_KEY}").json()['response']['song']
 
         return {
             "title": song_info["full_title"],
             "description": song_info["description"]["plain"],
-            "lyrics": self.genius.lyrics(song_id, remove_section_headers=True),
             "artists": song_info["artist_names"],
             "album": song_info["album"]["name"],
             "release_date": song_info["release_date_for_display"],
@@ -41,8 +34,11 @@ class GeniusAPIGateway(metaclass=Singleton):
 
     def get_artist_info(self, artist: str) -> dict:
         try:
-            artist_id = self.genius.search_artist(artist, max_songs=0).id
-            artist_info = self.genius.artist(artist_id)['artist']
+            # This will probably return a song.
+            song = requests.get(f"https://api.genius.com/search?q={artist}&access_token={self._GENIUS_API_KEY}").json()
+            artist_id = song['response']['hits'][0]['result']['primary_artist']['id']
+            artist_info = requests.get(f"https://api.genius.com/artists/{artist_id}?"
+                                     f"text_format=plain&access_token={self._GENIUS_API_KEY}").json()['response']['artist']
         except Exception as e:
             print(e)
             raise IOError(f"Could not find artist {artist}")
@@ -58,3 +54,4 @@ class GeniusAPIGateway(metaclass=Singleton):
             "instagram": artist_info["instagram_name"],
             "twitter": artist_info["twitter_name"]
         }
+
