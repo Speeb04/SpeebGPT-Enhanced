@@ -21,10 +21,10 @@ class GeniusAPIGateway(metaclass=Singleton):
         self.genius.verbose = False
 
     def get_song_info(self, song: str, artist: str) -> dict:
-        try:
-            song_id = self.genius.search(f"{song} {artist}")['hits'][0]['result']['id']
-        except Exception:
-            raise IOError(f"Could not find song {song} by {artist}")
+        # try:
+        song_id = self.genius.search(f"{song} {artist}")['hits'][0]['result']['id']
+        # except Exception as e:
+        #     raise IOError(f"Could not find song {song} by {artist}")
 
         song_info = self.genius.song(song_id)['song']
 
