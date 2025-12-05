@@ -56,9 +56,8 @@ class GoogleAPIGateway(metaclass=Singleton):
                                 Mentions to songs in general without a specific mention, like "can you tell me about this
                                 artist's songs?" should default to the --artist flag.
     
-    artist (--artist):          anything to do with an artist (even if not explicitly mentioned).
+    artist (--artist):          anything to do with a music artist (even if not explicitly mentioned).
                                 an input like "who sang this song?" would fall into this category.
-                                However, players and especially the term "star player" would not fall into this category.
 
     weather (--weather):        anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
 
@@ -68,6 +67,9 @@ class GoogleAPIGateway(metaclass=Singleton):
                                 need a web search, so this flag would be omitted.
                                 Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
                                 should not receive the --web flag.
+                                
+                                If a user is searching for players relating to a sports team, like "who's the star player of
+                                the Toronto Blue Jays?" should get the --web flag.
                             
     none of the above (--none): none of the above. Any message that mentions an image or a file (like, "what's in this image?")
                                 should get this flag.
