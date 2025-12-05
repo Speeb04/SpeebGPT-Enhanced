@@ -1,1 +1,2 @@
-# SpeebGPT-Enhanced
+# SpeebGPT Enhanced (Now search powered!)
+

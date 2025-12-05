@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+from google import genai
+from google.genai import types
+
+from singleton import Singleton
+
+
+# NOTE: The API key is retrieved from the environment variable `GEMINI_API_KEY`.
+class GoogleAPIGateway(metaclass=Singleton):
+    """
+    Each project should only implement at most one API Gateway.
+    This is to avoid abuse and rate limiting.
+
+    The Google Gemini API should be used for prompt-engineered focused responses.
+    This is to reduce cost and rate limiting
+    """
+    _MODEL: str
+
+    def __init__(self, model: str = "gemini-2.5-flash"):
+        self._MODEL = model
+        self.client = genai.Client()
+
+    @property
+    def model(self) -> str:
+        return self._MODEL
+
+    @model.setter
+    def model(self, model: str) -> None:
+        self._MODEL = model
+
+    def generate_response(self, instructions: str, content: str) -> str:
+        """Main method to generate responses from Google's Gemini API"""
+        response = self.client.models.generate_content(
+            model=self._MODEL,
+            config=types.GenerateContentConfig(
+                system_instruction=instructions,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
+            contents=content
+        )
+
+        return response.text
+
+    # All method below are to generate responses in regards with prompt engineering to refine the output.
+
+    flags = """
+    music (--music):        anything to do with a song (even if not explicitly mentioned).
+                            an input like "what song am I listening to currently?" would fall into this category.
+                            However, messages only mentioning artists falls under the --web flag.
+                            So, an input like "can you tell me about Taylor Swift?" would not fall into this category.
+
+    weather (--weather):    anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
+
+    web search (--web):     anything that has to do with a proper noun, or commonly becomes outdated,
+                            for example, "who is the current president of the United States?"
+                            something like a programming question or math question which relies on reasoning does not
+                            need a web search, so this flag would be omitted.
+                            
+    Note: all personal opinions lack flags. Even content such as "do you like Never Gonna Give You Up by Rick Astley"
+    lacks the --music flag as that is a matter of personal opinion.
+    """
+
+    def get_flags(self, content: str) -> str:
+        """Searches message content to get flags"""
+
+        instructions = f"""
+        Search the content below and choose one flag to output.
+        The flags all start with two dashes, "--", and are listed below:
+        
+        {GoogleAPIGateway.flags}
+        
+        For example, given the prompt "who is the current president of the United States?",
+        A response would be: "--web".
+        """
+
+        return self.generate_response(instructions, content)
+
+    def search_engine_optimization(self, content: str) -> str:
+        """Takes in message content and converts it into an SEO term for web
+        searches (for messages that have the web search flag.)"""
+
+        instructions = ("Read the content of the user message and create an SEO term for one web search that can answer"
+                        "the user's query.")
+
+        return self.generate_response(instructions, content)
+
+    def attain_music_information(self, content: str) -> str:
+        """Takes in message content about a song, and then determine the song's
+        name and artist"""
+
+        instructions = """
+        Read the content of the user message and determine the song's name and artist.
+        The output notation should be as follows: 
+        song=song_name\nartists="artist1","artist2"
+        
+        For example, for the song Never Gonna Give You Up by Rick Astley, the output would be:
+        song=Never Gonna Give You Up\nartists="Rick Astley"
+        """
+
+        return self.generate_response(instructions, content)
+
+    def attain_location_information(self, content) -> str:
+        """Takes in message content about a weather query, and then determines the location information to parse said
+        weather query. If none found, raises IOError."""
+
+        instructions = """
+        Read the content of the user message and determine the location they want access to.
+        The output notation should be as follows:
+        city=city_name\ncountry=two_letter_country_code
+        
+        For example, if the user query said "tell me about the weather in Toronto", the output would be:
+        city=Toronto\ncountry=CA
+        
+        If no city can be found, the output should be only "none".
+        """
+
+        output = self.generate_response(instructions, content)
+
+        if output == "none":
+            raise IOError("No location data found")
+
+        return output
