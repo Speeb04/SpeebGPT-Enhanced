@@ -8,6 +8,7 @@ class Conversation:
 
     _INSTRUCTIONS: str
     _MESSAGES: list[Message]
+    _MAX_CONVERSATION_LENGTH = 10
 
     def __init__(self, instructions: str | None = None):
         if instructions is None:
@@ -28,6 +29,7 @@ class Conversation:
 
     def add_message(self, message: Message) -> None:
         self._MESSAGES.append(message)
+        self.ensure_length()
 
     def to_list_dict(self) -> list[dict]:
         output = []
@@ -36,3 +38,7 @@ class Conversation:
             output.append(message.to_dict())
 
         return output
+
+    def ensure_length(self):
+        while len(self._MESSAGES) > self._MAX_CONVERSATION_LENGTH:
+            self._MESSAGES.pop(1)

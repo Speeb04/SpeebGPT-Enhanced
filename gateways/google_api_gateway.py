@@ -17,7 +17,7 @@ class GoogleAPIGateway(metaclass=Singleton):
     """
     _MODEL: str
 
-    def __init__(self, model: str = "gemini-2.5-flash"):
+    def __init__(self, model: str = "gemini-2.5-flash-lite"):
         self._MODEL = model
         self.client = genai.Client()
 
