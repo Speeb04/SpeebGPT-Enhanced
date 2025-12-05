@@ -150,11 +150,7 @@ async def create_message(discord_message: discord.Message, role: str, has_refere
 
     get_reference_message = await discord_message.channel.fetch_message(discord_message.reference.message_id)
 
-    if get_reference_message.author.id == client.user.id:
-        new_message = Message(role, text_content, images, files)
-        return new_message
-
-    message_content = f"> (From other user): {get_reference_message.content}\n" + text_content
+    message_content = f"> (Referencing): {get_reference_message.content}\n" + text_content
     new_message = Message(role, message_content, images, files)
 
     return new_message
