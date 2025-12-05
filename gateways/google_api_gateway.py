@@ -68,7 +68,8 @@ class GoogleAPIGateway(metaclass=Singleton):
                                 Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
                                 should not receive the --web flag.
                             
-    none of the above (--none): none of the above.
+    none of the above (--none): none of the above. Any message that mentions an image or a file (like, "what's in this image?")
+                                should get this flag.
                             
     Note: all personal opinions lack flags. Even content such as "do you like Never Gonna Give You Up by Rick Astley"
     lacks the --music flag as that is a matter of personal opinion.
