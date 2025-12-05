@@ -38,3 +38,23 @@ class GeniusAPIGateway(metaclass=Singleton):
             "url": song_info["url"],
             "icon_url": song_info['album']['cover_art_url']
         }
+
+    def get_artist_info(self, artist: str) -> dict:
+        try:
+            artist_id = self.genius.search_artist(artist, max_songs=0).id
+            artist_info = self.genius.artist(artist_id)['artist']
+        except Exception as e:
+            print(e)
+            raise IOError(f"Could not find artist {artist}")
+
+        return {
+            "name": artist_info["name"],
+            "description": artist_info["description"]["plain"],
+            "alternate_names": ', '.join(artist_info["alternate_names"]),
+            "icon_url": artist_info["image_url"],
+            "url": artist_info["url"],
+
+            # Social media
+            "instagram": artist_info["instagram_name"],
+            "twitter": artist_info["twitter_name"]
+        }

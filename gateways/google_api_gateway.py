@@ -3,7 +3,7 @@ from __future__ import annotations
 from google import genai
 from google.genai import types
 
-from singleton import Singleton
+from gateways.singleton import Singleton
 
 
 # NOTE: The API key is retrieved from the environment variable `GEMINI_API_KEY`.
@@ -45,17 +45,28 @@ class GoogleAPIGateway(metaclass=Singleton):
     # All method below are to generate responses in regards with prompt engineering to refine the output.
 
     flags = """
-    music (--music):        anything to do with a song (even if not explicitly mentioned).
-                            an input like "what song am I listening to currently?" would fall into this category.
-                            However, messages only mentioning artists falls under the --web flag.
-                            So, an input like "can you tell me about Taylor Swift?" would not fall into this category.
+    song (--song):              anything to do with a song (even if not explicitly mentioned).
+                                an input like "what song am I listening to currently?" would fall into this category.
+                                However, messages only mentioning artists falls under the --artist flag.
+                                So, an input like "can you tell me about Taylor Swift?" would not fall into this category.
+                                If both a song and an artist is mentioned, default to song.
+                                
+                                Mentions to songs in general without a specific mention, like "can you tell me about this
+                                artist's songs?" should default to the --artist flag.
+    
+    artist (--artist):          anything to do with an artist (even if not explicitly mentioned).
+                                an input like "who sang this song?" would fall into this category.
 
-    weather (--weather):    anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
+    weather (--weather):        anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
 
-    web search (--web):     anything that has to do with a proper noun, or commonly becomes outdated,
-                            for example, "who is the current president of the United States?"
-                            something like a programming question or math question which relies on reasoning does not
-                            need a web search, so this flag would be omitted.
+    web search (--web):         anything that has to do with a proper noun, or commonly becomes outdated,
+                                for example, "who is the current president of the United States?"
+                                something like a programming question or math question which relies on reasoning does not
+                                need a web search, so this flag would be omitted.
+                                Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
+                                should not receive the --web flag.
+                            
+    none of the above (--none): none of the above.
                             
     Note: all personal opinions lack flags. Even content such as "do you like Never Gonna Give You Up by Rick Astley"
     lacks the --music flag as that is a matter of personal opinion.
@@ -85,17 +96,33 @@ class GoogleAPIGateway(metaclass=Singleton):
 
         return self.generate_response(instructions, content)
 
-    def attain_music_information(self, content: str) -> str:
+    def attain_song_information(self, content: str) -> str:
         """Takes in message content about a song, and then determine the song's
         name and artist"""
 
         instructions = """
         Read the content of the user message and determine the song's name and artist.
         The output notation should be as follows: 
-        song=song_name\nartists="artist1","artist2"
+        song_name\n"artist1","artist2"
         
         For example, for the song Never Gonna Give You Up by Rick Astley, the output would be:
-        song=Never Gonna Give You Up\nartists="Rick Astley"
+        Never Gonna Give You Up\n"Rick Astley"
+        
+        If the prompt starts with (The user is playing...) but they mention a different track
+        later on, disregard the (The user is playing...) message at the top.
+        """
+
+        return self.generate_response(instructions, content)
+
+    def attain_artist_information(self, content: str) -> str:
+        """Takes in message content about a song, and then determine the song's
+        name and artist"""
+
+        instructions = """
+        Read the content of the user message and determine the main artist mentioned.
+        
+        For example, if the user asks "who is Taylor Swift?", the output would be:
+        "Taylor Swift"
         """
 
         return self.generate_response(instructions, content)
@@ -107,10 +134,10 @@ class GoogleAPIGateway(metaclass=Singleton):
         instructions = """
         Read the content of the user message and determine the location they want access to.
         The output notation should be as follows:
-        city=city_name\ncountry=two_letter_country_code
+        city_name, two_letter_country_code
         
         For example, if the user query said "tell me about the weather in Toronto", the output would be:
-        city=Toronto\ncountry=CA
+        Toronto, CA
         
         If no city can be found, the output should be only "none".
         """

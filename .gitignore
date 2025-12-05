@@ -209,3 +209,4 @@ __marimo__/
 # API tokens, cache files
 tokens.txt
 .idea/
+test.py

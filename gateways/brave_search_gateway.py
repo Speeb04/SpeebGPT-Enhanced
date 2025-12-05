@@ -31,14 +31,15 @@ class BraveSearchGateway(metaclass=Singleton):
             params={
                 "q": query,
                 "country": self.country,
-                "safesearch": "strict"
+                "safesearch": "strict",
+                "count": 3
             },
         ).json()
 
-        if len(response["discussions"]["results"]) > 5:
-            return response["discussions"]["results"][:5]
+        if len(response["web"]["results"]) > 3:
+            return response["web"]["results"][:3]
 
-        return response["discussions"]["results"]
+        return response["web"]["results"]
 
     def concise_search(self, query: str) -> list[dict]:
         """Same as _search, but removes extra metadata from responses to reduce fluff."""
@@ -49,6 +50,7 @@ class BraveSearchGateway(metaclass=Singleton):
                 "title": result["title"],
                 "url": result["url"],
                 "description": result["description"],
+                "hostname": result["meta_url"]["netloc"]
             })
 
         return concise_responses

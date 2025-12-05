@@ -17,8 +17,18 @@ class Message:
                  images: list[Image] = None, files: list[File] = None):
         self.role = role
         self.text_content = text_content
+
         self.images = images
         self.files = files
+
+        # allows for empty lists to be initialized as NoneType
+        if isinstance(images, list):
+            if len(images) == 0:
+                self.images = None
+
+        if isinstance(files, list):
+            if len(files) == 0:
+                self.files = None
 
     def has_images(self):
         return self.images is not None
@@ -37,7 +47,10 @@ class Message:
         for file in self.files:
             output.append({
                 "type": "file",
-                "file_data": f"data:application/pdf;base64,{file.b64_file}"
+                "file": {
+                    "filename": file.filename,
+                    "file_data": f"data:application/pdf;base64,{file.b64_file}"
+                }
             })
 
         return output
@@ -49,8 +62,11 @@ class Message:
         output = []
         for image in self.images:
             output.append({
-                "type": "image",
-                "image_data": f"data:image/{image.type};base64,{image.b64_image}"
+                "type": "image_url",
+                # "image_data": f"data:image/{image.type};base64,{image.b64_image}"
+                "image_url": {
+                    "url": image.url
+                }
             })
 
         return output
@@ -62,7 +78,7 @@ class Message:
             content_list.extend(self._images_to_dict_list())
 
         if self.has_files():
-            content_list.extend(self._images_to_dict_list())
+            content_list.extend(self._files_to_dict_list())
 
         content_list.append({
             "type": "text",
@@ -80,12 +96,13 @@ class Image:
     """
 
     # base64 encoded image in UTF-8 format
-    b64_image: str
-    type: str
+    # b64_image: str
+    # type: str
 
-    def __init__(self, image_bytes: bytes, type: str) -> None:
-        self.b64_image = base64.b64encode(image_bytes).decode("utf-8")
-        self.type = type
+    def __init__(self, url: str) -> None:
+        # self.b64_image = base64.b64encode(image_bytes).decode("utf-8")
+        # self.type = type
+        self.url = url
 
 
 @final
@@ -98,8 +115,11 @@ class File:
     explicitly treated as PDF files.
     """
 
+    filename: str
+
     # base64 encoded file in UTF-8 format
     b64_file: str
 
-    def __init__(self, file_bytes: bytes) -> None:
+    def __init__(self, filename: str, file_bytes: bytes) -> None:
+        self.filename = filename
         self.b64_file = base64.b64encode(file_bytes).decode("utf-8")

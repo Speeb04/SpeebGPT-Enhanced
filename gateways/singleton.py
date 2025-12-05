@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from typing import final
+
+
+@final
 class Singleton(type):
     """
     Singleton pattern implementation.

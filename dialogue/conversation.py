@@ -1,5 +1,5 @@
 from __future__ import annotations
-from message import Message
+from dialogue.message import Message
 
 class Conversation:
     """
@@ -9,13 +9,22 @@ class Conversation:
     _INSTRUCTIONS: str
     _MESSAGES: list[Message]
 
-    def __init__(self, instructions: str | None):
+    def __init__(self, instructions: str | None = None):
         if instructions is None:
-            self._INSTRUCTIONS = """You are a helpful assistant named Speebot. 
-            Give sassy and concise, but helpful responses."""
+            self._INSTRUCTIONS = """
+            You are a helpful assistant named Speebot. 
+            Give sassy and concise, but helpful responses. (In particular, at most around 70 words)
+            Use the search results given by the system to help form responses.
+            """
 
         else:
             self._INSTRUCTIONS = instructions
+
+        self._MESSAGES = [Message("system", self._INSTRUCTIONS)]
+
+    @property
+    def instructions(self) -> str | None:
+        return self._INSTRUCTIONS
 
     def add_message(self, message: Message) -> None:
         self._MESSAGES.append(message)
