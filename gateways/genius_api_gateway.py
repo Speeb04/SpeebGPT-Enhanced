@@ -37,7 +37,7 @@ class GeniusAPIGateway(metaclass=Singleton):
             # This will probably return a song.
             song = requests.get(f"https://api.genius.com/search?q={artist}&access_token={self._GENIUS_API_KEY}").json()
             artist_id = song['response']['hits'][0]['result']['primary_artist']['id']
-            artist_info = requests.get(f"https://api.genius.com/songs/{artist_id}?"
+            artist_info = requests.get(f"https://api.genius.com/artists/{artist_id}?"
                                      f"text_format=plain&access_token={self._GENIUS_API_KEY}").json()['response']['artist']
         except Exception as e:
             print(e)
