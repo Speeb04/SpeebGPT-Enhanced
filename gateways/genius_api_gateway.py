@@ -14,7 +14,7 @@ class GeniusAPIGateway(metaclass=Singleton):
 
     def get_song_info(self, song: str, artist: str) -> dict:
         try:
-            response = requests.get(f"https://api.genius.com/search?q={song}&access_token={self._GENIUS_API_KEY}")
+            response = requests.get(f"https://api.genius.com/search?q={song} {artist}&access_token={self._GENIUS_API_KEY}")
             song_id = response.json()['response']['hits'][0]['result']['id']
         except Exception:
             raise IOError(f"Could not find song {song} by {artist}")
