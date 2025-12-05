@@ -58,6 +58,7 @@ class GoogleAPIGateway(metaclass=Singleton):
     
     artist (--artist):          anything to do with an artist (even if not explicitly mentioned).
                                 an input like "who sang this song?" would fall into this category.
+                                However, players and especially the term "star player" would not fall into this category.
 
     weather (--weather):        anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
 
