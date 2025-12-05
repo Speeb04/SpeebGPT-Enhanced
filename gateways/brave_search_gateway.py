@@ -36,6 +36,9 @@ class BraveSearchGateway(metaclass=Singleton):
             },
         ).json()
 
+        import pprint
+        pprint.pprint(response)
+
         if len(response["web"]["results"]) > 3:
             return response["web"]["results"][:3]
 
