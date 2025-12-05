@@ -1,3 +1,5 @@
-google
+google-genai
 discord
 lyricsgenius==3.6.2
+pycountry
+openai
