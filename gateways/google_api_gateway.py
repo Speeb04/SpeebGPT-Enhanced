@@ -92,7 +92,8 @@ class GoogleAPIGateway(metaclass=Singleton):
         searches (for messages that have the web search flag.)"""
 
         instructions = ("Read the content of the user message and create an SEO term for one web search that can answer"
-                        "the user's query.")
+                        "the user's query. Return only the SEO term and nothing else. So, for example, if the query is"
+                        "'who won the super bowl?', the response would be 'super bowl'.")
 
         return self.generate_response(instructions, content)
 
