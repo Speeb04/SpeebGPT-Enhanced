@@ -26,7 +26,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 ALIASES = ["speeb", "speebot", "speebgpt"]
 WAKE_UP = ["hi", "hey", "heya", "good *", "whats up", "yo", "hello", "happy *"]
 
-DISCLAIMER = "\n-# SpeebGPT can make mistakes. [Find out more.](<https://github.com/Speeb04/SpeebGPT-Enhanced>)"
+DISCLAIMER = "\n-# SpeebGPT can make mistakes. [Find out more.](<https://github.com/Speeb04/SpeebGPT-Enhanced/blob/main/README.md#privacy-notice>)"
 
 PROJECT_URL = "https://github.com/Speeb04/SpeebGPT-Enhanced"
 
