@@ -23,7 +23,7 @@ from gateways.genius_api_gateway import GeniusAPIGateway
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-ALIASES = ["speeb", "speebot"]
+ALIASES = ["speeb", "speebot", "speebgpt"]
 WAKE_UP = ["hi", "hey", "heya", "good *", "whats up", "yo", "hello", "happy *"]
 
 DISCLAIMER = "\n-# SpeebGPT can make mistakes. [Find out more.](<https://github.com/Speeb04/SpeebGPT-Enhanced>)"
