@@ -81,7 +81,7 @@ _Mentioning SpeebGPT_ will also **initiate a conversation.**
     SpeebGPT uses the **OpenWeatherMap API** to fetch current weather information 
     about a given location.  
     Only _current weather information_ is retrieved - forecasting information is omitted.
-* ### [Music Information (via api.genius.com)](https://docs.genius.com/)
+* ### [Music Information (via `api.genius.com`)](https://docs.genius.com/)
     SpeebGPT uses the **Genius API** to parse information about songs and artists.
     > *Q: Can SpeebGPT access song lyric information?*
 
