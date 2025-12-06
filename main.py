@@ -128,6 +128,14 @@ SUPPORTED_IMAGES = ["png", "jpg", "jpeg", "webp", "gif"]
 SUPPORTED_FILES = ["pdf"]
 
 
+async def get_reference_content(discord_message: discord.Message) -> str:
+    if discord_message.reference is None:
+        return ""
+
+    get_reference_message = await discord_message.channel.fetch_message(discord_message.reference.message_id)
+    return get_reference_message.content
+
+
 async def create_message(discord_message: discord.Message, role: str, has_reference = False) -> Message:
     text_content = discord_message.content
 
@@ -150,7 +158,11 @@ async def create_message(discord_message: discord.Message, role: str, has_refere
 
     get_reference_message = await discord_message.channel.fetch_message(discord_message.reference.message_id)
 
-    message_content = f"> (Referencing): {get_reference_message.content}\n" + text_content
+    if get_reference_message.author.id == client.user.id:
+        new_message = Message(role, text_content, images, files)
+        return new_message
+
+    message_content = f"> (In response to): {get_reference_message.content}\n" + text_content
     new_message = Message(role, message_content, images, files)
 
     return new_message
@@ -211,7 +223,9 @@ def get_history_list(conversation: Conversation) -> list:
 
 async def create_search_response(discord_message: discord.Message,
                                  message: Message, conversation: Conversation) -> discord.Message:
-    seo_optimized = google_gateway.search_engine_optimization(message.text_content)
+    reference_text = f"> (replying to): {await get_reference_content(discord_message)}\n"
+
+    seo_optimized = google_gateway.search_engine_optimization(reference_text + message.text_content)
     search_results = brave_search_gateway.concise_search(seo_optimized)
 
     summarize_results = ""
@@ -266,7 +280,8 @@ def weather_summary_string(weather_response: dict) -> str:
 
 async def create_weather_response(discord_message: discord.Message,
                             message: Message, conversation: Conversation) -> discord.Message:
-    get_location = google_gateway.attain_location_information(message.text_content)
+    reference_text = f"> (replying to): {await get_reference_content(discord_message)}\n"
+    get_location = google_gateway.attain_location_information(reference_text + message.text_content)
     city, country = get_location.split(', ')
     weather_results = weather_gateway.weather_lookup(f"{city},{country}")
 
@@ -334,11 +349,13 @@ def generate_weather_embed(weather_response: dict) -> Embed:
 
 async def create_song_response(discord_message: discord.Message,
                                  message: Message, conversation: Conversation) -> discord.Message:
+    reference_text = f"> (replying to): {await get_reference_content(discord_message)}\n"
     user_info = add_user_information(discord_message)
     if user_info == "":
-        song_details = google_gateway.attain_song_information(message.text_content)
+        song_details = google_gateway.attain_song_information(reference_text + message.text_content)
     else:
-        song_details = google_gateway.attain_song_information(f"(The user is playing: {user_info})\n" + message.text_content)
+        song_details = google_gateway.attain_song_information(f"(The user is playing: {user_info})\n" +
+                                                              reference_text + message.text_content)
     song_name, song_artists = song_details.split('\n')
     song_artists = song_artists.split(',')
     for i in range(len(song_artists)):
@@ -384,11 +401,13 @@ async def generate_song_embed(song_info: dict) -> Embed:
 
 async def create_artist_response(discord_message: discord.Message,
                                  message: Message, conversation: Conversation) -> discord.Message:
+    reference_text = f"> (replying to): {await get_reference_content(discord_message)}\n"
     user_info = add_user_information(discord_message)
     if user_info == "":
-        artist_details = google_gateway.attain_artist_information(message.text_content)
+        artist_details = google_gateway.attain_artist_information(reference_text + message.text_content)
     else:
-        artist_details = google_gateway.attain_artist_information(f"(The user is playing: {user_info})\n" + message.text_content)
+        artist_details = google_gateway.attain_artist_information(f"(The user is playing: {user_info})\n" +
+                                                                  reference_text + message.text_content)
 
     artist_info = genius_gateway.get_artist_info(artist_details)
 
