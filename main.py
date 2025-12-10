@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import datetime
 
@@ -462,9 +463,19 @@ async def create_general_response(discord_message: discord.Message, conversation
     return sent_message
 
 
+async def im_trolling(discord_message: discord.Message):
+    sent_msg = await discord_message.reply("Hush hush femboy")
+    await asyncio.sleep(3)
+    await sent_msg.delete()
+
+
 @client.event
 async def on_message(discord_message: discord.Message):
     global conversations_history
+
+    # We do a wee bit of trolling.
+    if discord_message.author.id == 1074576263936749618:
+        await im_trolling(discord_message)
 
     # Ignore messages from bot itself
     if discord_message.author == client.user:
