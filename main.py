@@ -467,7 +467,7 @@ async def create_general_response(discord_message: discord.Message, conversation
 # If message sent by the femboy
 async def im_trolling(discord_message: discord.Message):
     sent_msg = await discord_message.reply("Hush hush femboy")
-    await asyncio.sleep(3)
+    await asyncio.sleep(2)
     await sent_msg.delete()
 
 
