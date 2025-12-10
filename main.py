@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import random
 from datetime import datetime
 
 import discord
@@ -463,6 +464,7 @@ async def create_general_response(discord_message: discord.Message, conversation
     return sent_message
 
 
+# If message sent by the femboy
 async def im_trolling(discord_message: discord.Message):
     sent_msg = await discord_message.reply("Hush hush femboy")
     await asyncio.sleep(3)
@@ -475,7 +477,8 @@ async def on_message(discord_message: discord.Message):
 
     # We do a wee bit of trolling.
     if discord_message.author.id == 1074576263936749618:
-        await im_trolling(discord_message)
+        if random.randint(0, 100) == 67:
+            await im_trolling(discord_message)
 
     # Ignore messages from bot itself
     if discord_message.author == client.user:
