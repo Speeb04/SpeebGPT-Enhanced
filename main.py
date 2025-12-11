@@ -102,7 +102,7 @@ async def get_conversation(discord_message: discord.Message) -> Conversation:
     global conversations_history
 
     for conversation in conversations_history:
-        if discord_message.id in conversation["message_history"]:
+        if discord_message.reference.message_id in conversation["message_history"]:
             return conversation["conversation"]
 
     raise ValueError("No conversation found")
@@ -318,9 +318,9 @@ def generate_weather_embed(weather_response: dict) -> Embed:
         word.capitalize() for word in weather_response['description'].split(' '))
 
     if weather_response['rain'] != 0:
-        rain_description = f"It will rain {weather_response['rain']['1h']}mm/h 🌧️"
+        rain_description = f"It will rain {weather_response['rain']}mm/h 🌧️"
     elif weather_response['snow'] != 0:
-        rain_description = f"It will snow {weather_response['snow']['1h']}mm/h 🌧️"
+        rain_description = f"It will snow {weather_response['snow']}mm/h 🌨️"
     else:
         rain_description = "There is no rain outside currently ☀️"
 
@@ -487,8 +487,8 @@ async def on_message(discord_message: discord.Message):
         new_message = await create_message(discord_message, "user", discord_message.reference is not None)
         sent_message = await message_response_pipeline(discord_message, new_message, conversation)
 
-        message_history_list = get_history_list(conversation)
-        message_history_list.append(sent_message.id)
+    message_history_list = get_history_list(conversation)
+    message_history_list.append(sent_message.id)
 
 
 @client.event

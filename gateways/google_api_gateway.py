@@ -120,9 +120,16 @@ class GoogleAPIGateway(metaclass=Singleton):
         
         If the prompt starts with (The user is playing...) but they mention a different track
         later on, disregard the (The user is playing...) message at the top.
+        
+        If no song information can be found, the output would be "none".
         """
 
-        return self.generate_response(instructions, content)
+        output = self.generate_response(instructions, content)
+
+        if output == "none":
+            raise IOError("No song information found.")
+
+        return output
 
     def attain_artist_information(self, content: str) -> str:
         """Takes in message content about a song, and then determine the song's
@@ -133,9 +140,16 @@ class GoogleAPIGateway(metaclass=Singleton):
         
         For example, if the user asks "who is Taylor Swift?", the output would be:
         "Taylor Swift"
+        
+        If no artist information can be found, the output would be "none".
         """
 
-        return self.generate_response(instructions, content)
+        output = self.generate_response(instructions, content)
+
+        if output == "none":
+            raise IOError("No artist information found.")
+
+        return output
 
     def attain_location_information(self, content) -> str:
         """Takes in message content about a weather query, and then determines the location information to parse said
