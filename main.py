@@ -60,6 +60,14 @@ weather_gateway = WeatherAPIGateway()
 genius_gateway = GeniusAPIGateway()
 
 
+class ExplicitOutputException(Exception):
+    pass
+
+
+def check_for_explicit_content(message: str) -> bool:
+    return openai_gateway.moderation_filter(message)
+
+
 async def check_for_mention_wakeup(discord_message: discord.Message) -> bool:
     if len(discord_message.content.split()) > 1:
         # remove the non-alphanumeric characters, and make all characters lowercase (somehow, this actually works!)
@@ -169,6 +177,7 @@ async def create_message(discord_message: discord.Message, role: str, has_refere
 
     return new_message
 
+
 async def message_response_pipeline(discord_message: discord.Message,
                                     message: Message, conversation: Conversation) -> discord.Message:
     # First, adds the message to the conversation
@@ -240,6 +249,9 @@ async def create_search_response(discord_message: discord.Message,
 
     message_history = conversation.to_list_dict()
     response = openai_gateway.generate_response(message_history)
+
+    if check_for_explicit_content(response):
+        raise ExplicitOutputException("Harmful content detected")
 
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
@@ -456,6 +468,9 @@ async def create_general_response(discord_message: discord.Message, conversation
     message_history = conversation.to_list_dict()
     response = openai_gateway.generate_response(message_history)
 
+    if check_for_explicit_content(response):
+        raise ExplicitOutputException("Harmful content detected")
+
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
 
@@ -485,21 +500,32 @@ async def on_message(discord_message: discord.Message):
         return
 
     if await check_for_reply_wakeup(discord_message):
+        # All explicit content is ignored
+        if check_for_explicit_content(discord_message.content):
+            return
         try:
             conversation = await get_conversation(discord_message)
         except ValueError:
             conversation = await create_conversation(discord_message)
 
     elif await check_for_mention_wakeup(discord_message):
+        # All explicit content is ignored
+        if check_for_explicit_content(discord_message.content):
+            return
+
         conversation = await create_conversation(discord_message)
 
     else:
         return
 
     # At this point either we have received a conversation, or one has been created.
-    async with discord_message.channel.typing():
-        new_message = await create_message(discord_message, "user", discord_message.reference is not None)
-        sent_message = await message_response_pipeline(discord_message, new_message, conversation)
+    try:
+        async with discord_message.channel.typing():
+            new_message = await create_message(discord_message, "user", discord_message.reference is not None)
+            sent_message = await message_response_pipeline(discord_message, new_message, conversation)
+
+    except ExplicitOutputException:
+        await discord_message.reply("> Response removed due to explicit or harmful content." + DISCLAIMER)
 
     message_history_list = get_history_list(conversation)
     message_history_list.append(sent_message.id)

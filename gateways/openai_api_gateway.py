@@ -34,3 +34,12 @@ class OpenAIGateway(metaclass=Singleton):
         )
 
         return response.choices[0].message.content
+
+    def moderation_filter(self, message: str) -> bool:
+        # returns True if the content is explicit.
+        response = self.client.moderations.create(
+            model="omni-moderation-latest",
+            input=message,
+        ).to_dict()
+
+        return response['results'][0]['flagged']
