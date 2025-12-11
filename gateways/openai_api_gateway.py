@@ -42,4 +42,16 @@ class OpenAIGateway(metaclass=Singleton):
             input=message,
         ).to_dict()
 
-        return response['results'][0]['flagged']
+        flagged = response['results'][0]['flagged']
+        if not flagged:
+            return False
+
+        categories = response['results'][0]['categories']
+
+        for category in categories:
+            if category == "hate" or category == "harassment":
+                continue
+            if categories[category]:
+                return True
+
+        return False
