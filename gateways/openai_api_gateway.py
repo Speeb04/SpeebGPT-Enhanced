@@ -3,7 +3,6 @@ from openai import OpenAI
 
 from gateways.singleton import Singleton
 
-
 # NOTE: The API key is retrieved from the environment variable `OPENAI_API_KEY`.
 class OpenAIGateway(metaclass=Singleton):
     """
@@ -27,6 +26,9 @@ class OpenAIGateway(metaclass=Singleton):
     def model(self, model: str) -> None:
         self._MODEL = model
 
+    def change_reasoning(self, reasoning: str) -> None:
+        self._REASONING = reasoning
+
     def generate_response(self, messages: list) -> str:
         response = self.client.chat.completions.create(
             model=self._MODEL,
@@ -36,22 +38,26 @@ class OpenAIGateway(metaclass=Singleton):
         return response.choices[0].message.content
 
     def moderation_filter(self, message: str) -> bool:
+        # Manual override to troll
+        if "femboy" in message:
+            return False
+
+        if "twink" in message:
+            return False
+
+        if "catboy" in message:
+            return False
+
         # returns True if the content is explicit.
         response = self.client.moderations.create(
             model="omni-moderation-latest",
             input=message,
         ).to_dict()
 
-        flagged = response['results'][0]['flagged']
-        if not flagged:
-            return False
+        scores = response['results'][0]['category_scores']
 
-        categories = response['results'][0]['categories']
-
-        for category in categories:
-            if category == "hate" or category == "harassment":
-                continue
-            if categories[category]:
+        for category in scores:
+            if scores[category] > 0.1:
                 return True
 
         return False

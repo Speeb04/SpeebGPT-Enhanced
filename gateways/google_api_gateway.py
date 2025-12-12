@@ -47,32 +47,41 @@ class GoogleAPIGateway(metaclass=Singleton):
     # All method below are to generate responses in regards with prompt engineering to refine the output.
 
     flags = """
-    song (--song):              anything to do with a song (even if not explicitly mentioned).
-                                an input like "what song am I listening to currently?" would fall into this category.
-                                However, messages only mentioning artists falls under the --artist flag.
-                                So, an input like "can you tell me about Taylor Swift?" would not fall into this category.
-                                If both a song and an artist is mentioned, default to song.
+    song (--song):                  anything to do with a song (even if not explicitly mentioned).
+                                    an input like "what song am I listening to currently?" would fall into this category.
+                                    However, messages only mentioning artists falls under the --artist flag.
+                                    So, an input like "can you tell me about Taylor Swift?" would not fall into this category.
+                                    If both a song and an artist is mentioned, default to song.
                                 
-                                Mentions to songs in general without a specific mention, like "can you tell me about this
-                                artist's songs?" should default to the --artist flag.
+                                    Mentions to songs in general without a specific mention, like "can you tell me about this
+                                    artist's songs?" should default to the --artist flag.
     
-    artist (--artist):          anything to do with a music artist (even if not explicitly mentioned).
-                                an input like "who sang this song?" would fall into this category.
+    artist (--artist):              anything to do with a music artist (even if not explicitly mentioned).
+                                    an input like "who sang this song?" would fall into this category.
 
-    weather (--weather):        anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
+    weather (--weather):            anything to do with the current weather, like temperature, wind, sunrise/sunset, etc.
 
-    web search (--web):         anything that has to do with a proper noun, or commonly becomes outdated,
-                                for example, "who is the current president of the United States?"
-                                something like a programming question or math question which relies on reasoning does not
-                                need a web search, so this flag would be omitted.
-                                Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
-                                should not receive the --web flag.
+    web search (--web):             anything that has to do with a proper noun, or commonly becomes outdated,
+                                    for example, "who is the current president of the United States?"
+                                    something like a programming question or math question which relies on reasoning does not
+                                    need a web search, so this flag would be omitted.
+                                    Furthermore, if a prompt is vague, like "what is this image?" with none provided, this
+                                    should not receive the --web flag.
                                 
-                                If a user is searching for players relating to a sports team, like "who's the star player of
-                                the Toronto Blue Jays?" should get the --web flag.
+                                    If a user is searching for players relating to a sports team, like "who's the star player of
+                                    the Toronto Blue Jays?" should get the --web flag.
+    
+    logical or reasoning (--logic)  Anything that requires higher logical processing, such as a math question or a problem
+                                    solving prompt. Everything in this category should not need a web search to solve.
+                                    Any message that mentions an image or a file (like, "what's in this image?")
+                                    should get this flag.
+                                    
+                                    All academia questions should get this flag, unless they benefit more from a web search.
+                                    
+                                    Any question in the form "can you help me with this question?" should get this flag.
+                                    All programming related questions should also get this flag.
                             
-    none of the above (--none): none of the above. Any message that mentions an image or a file (like, "what's in this image?")
-                                should get this flag.
+    none of the above (--none):     None of the above. 
                             
     Note: all personal opinions lack flags. Even content such as "do you like Never Gonna Give You Up by Rick Astley"
     lacks the --music flag as that is a matter of personal opinion.

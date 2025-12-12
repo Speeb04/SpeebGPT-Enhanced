@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 import random
+import typing
 from datetime import datetime
 
 import discord
@@ -62,6 +64,16 @@ genius_gateway = GeniusAPIGateway()
 
 class ExplicitOutputException(Exception):
     pass
+
+async def run_blocking(blocking_func: typing.Callable, *args, **kwargs) -> typing.Any:
+    """Runs a blocking function in a non-blocking way"""
+    func = functools.partial(blocking_func, *args, **kwargs) # `run_in_executor` doesn't support kwargs, `functools.partial` does
+    return await client.loop.run_in_executor(None, func)
+
+
+def get_openai_response(conversation: Conversation):
+    message_history = conversation.to_list_dict()
+    return openai_gateway.generate_response(message_history)
 
 
 def check_for_explicit_content(message: str) -> bool:
@@ -189,21 +201,31 @@ async def message_response_pipeline(discord_message: discord.Message,
     # Get flags
     flag = google_gateway.get_flags(message.text_content)
 
-    match flag:
-        case "--web":
-            return await create_search_response(discord_message, message, conversation)
+    try:
+        match flag:
+            case "--web":
+                return await create_search_response(discord_message, message, conversation)
 
-        case "--weather":
-            return await create_weather_response(discord_message, message, conversation)
+            case "--weather":
+                return await create_weather_response(discord_message, message, conversation)
 
-        case "--song":
-            return await create_song_response(discord_message, message, conversation)
+            case "--song":
+                return await create_song_response(discord_message, message, conversation)
 
-        case "--artist":
-            return await create_artist_response(discord_message, message, conversation)
+            case "--artist":
+                return await create_artist_response(discord_message, message, conversation)
 
-        case _:
-            return await create_general_response(discord_message, conversation)
+            case "--logic":
+                return await create_logical_response(discord_message, conversation)
+
+            case _:
+                return await create_general_response(discord_message, conversation)
+
+    except ExplicitOutputException:
+        raise ExplicitOutputException("Harmful content detected")
+
+    except:
+        return await create_general_response(discord_message, conversation)
 
 
 def add_user_information(discord_message: discord.Message) -> str:
@@ -237,6 +259,10 @@ async def create_search_response(discord_message: discord.Message,
     reference_text = f"> (replying to): {await get_reference_content(discord_message)}\n"
 
     seo_optimized = google_gateway.search_engine_optimization(reference_text + message.text_content)
+
+    # Send web search notification
+    await discord_message.channel.send(f"> 🔍 Searching for: {seo_optimized}")
+
     search_results = brave_search_gateway.concise_search(seo_optimized)
 
     summarize_results = ""
@@ -247,13 +273,13 @@ async def create_search_response(discord_message: discord.Message,
     system_message = Message("system", f"below are some search results to help answer the user's query:\n{summarize_results}")
     conversation.add_message(system_message)
 
-    message_history = conversation.to_list_dict()
-    response = openai_gateway.generate_response(message_history)
+    response = await run_blocking(get_openai_response, conversation)
 
     if check_for_explicit_content(response):
         raise ExplicitOutputException("Harmful content detected")
 
-    assistant_message = Message("assistant", response)
+    async with discord_message.channel.typing():
+        assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
 
     embed = generate_search_embed(seo_optimized, search_results)
@@ -306,8 +332,7 @@ async def create_weather_response(discord_message: discord.Message,
                                       f"Round numbers.\n" + weather_summary)
     conversation.add_message(system_message)
 
-    message_history = conversation.to_list_dict()
-    response = openai_gateway.generate_response(message_history)
+    response = await run_blocking(get_openai_response, conversation)
 
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
@@ -382,8 +407,7 @@ async def create_song_response(discord_message: discord.Message,
 
     conversation.add_message(system_message)
 
-    message_history = conversation.to_list_dict()
-    response = openai_gateway.generate_response(message_history)
+    response = await run_blocking(get_openai_response, conversation)
 
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
@@ -430,8 +454,7 @@ async def create_artist_response(discord_message: discord.Message,
 
     conversation.add_message(system_message)
 
-    message_history = conversation.to_list_dict()
-    response = openai_gateway.generate_response(message_history)
+    response = await run_blocking(get_openai_response, conversation)
 
     assistant_message = Message("assistant", response)
     conversation.add_message(assistant_message)
@@ -464,9 +487,32 @@ async def generate_artist_embed(artist_info: dict) -> Embed:
     return embed
 
 
-async def create_general_response(discord_message: discord.Message, conversation: Conversation) -> discord.Message:
+async def create_logical_response(discord_message: discord.Message, conversation: Conversation) -> discord.Message:
     message_history = conversation.to_list_dict()
-    response = openai_gateway.generate_response(message_history)
+
+    # Send model change notification
+    await discord_message.channel.send(f"> 💭 Switching to high reasoning model...")
+
+    # change to high reasoning
+    openai_gateway.change_reasoning("high")
+    response = await run_blocking(get_openai_response, conversation)
+    openai_gateway.change_reasoning("low")
+
+    if check_for_explicit_content(response):
+        raise ExplicitOutputException("Harmful content detected")
+
+    async with discord_message.channel.typing():
+        assistant_message = Message("assistant", response)
+
+    conversation.add_message(assistant_message)
+
+    sent_message = await discord_message.reply(response + DISCLAIMER)
+
+    return sent_message
+
+
+async def create_general_response(discord_message: discord.Message, conversation: Conversation) -> discord.Message:
+    response = get_openai_response(conversation)
 
     if check_for_explicit_content(response):
         raise ExplicitOutputException("Harmful content detected")
@@ -519,13 +565,14 @@ async def on_message(discord_message: discord.Message):
         return
 
     # At this point either we have received a conversation, or one has been created.
-    try:
-        async with discord_message.channel.typing():
+    async with discord_message.channel.typing():
+        try:
             new_message = await create_message(discord_message, "user", discord_message.reference is not None)
             sent_message = await message_response_pipeline(discord_message, new_message, conversation)
 
-    except ExplicitOutputException:
-        await discord_message.reply("> Response removed due to explicit or harmful content." + DISCLAIMER)
+        except ExplicitOutputException:
+            await discord_message.reply("> Response removed due to explicit or harmful content." + DISCLAIMER)
+            return
 
     message_history_list = get_history_list(conversation)
     message_history_list.append(sent_message.id)
