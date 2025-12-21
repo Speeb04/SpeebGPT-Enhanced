@@ -184,7 +184,7 @@ async def create_message(discord_message: discord.Message, role: str, has_refere
         new_message = Message(role, text_content, images, files)
         return new_message
 
-    message_content = f"> (In response to): {get_reference_message.content}\n" + text_content
+    message_content = f"> (In response to message above)" + text_content
     new_message = Message(role, message_content, images, files)
 
     return new_message
@@ -488,8 +488,6 @@ async def generate_artist_embed(artist_info: dict) -> Embed:
 
 
 async def create_logical_response(discord_message: discord.Message, conversation: Conversation) -> discord.Message:
-    message_history = conversation.to_list_dict()
-
     # Send model change notification
     await discord_message.channel.send(f"> 💭 Switching to high reasoning model...")
 
@@ -567,8 +565,15 @@ async def on_message(discord_message: discord.Message):
     # At this point either we have received a conversation, or one has been created.
     async with discord_message.channel.typing():
         try:
-            new_message = await create_message(discord_message, "user", discord_message.reference is not None)
-            sent_message = await message_response_pipeline(discord_message, new_message, conversation)
+            if discord_message.reference is not None:
+                referenced_discord_message = await discord_message.channel.fetch_message(discord_message.reference.message_id)
+                conversation.add_message(await create_message(referenced_discord_message, "user", False))
+                new_message = await create_message(discord_message, "user", True)
+                sent_message = await message_response_pipeline(discord_message, new_message, conversation)
+
+            else:
+                new_message = await create_message(discord_message, "user", False)
+                sent_message = await message_response_pipeline(discord_message, new_message, conversation)
 
         except ExplicitOutputException:
             await discord_message.reply("> Response removed due to explicit or harmful content." + DISCLAIMER)
@@ -590,3 +595,4 @@ async def on_ready():
 if __name__ == "__main__":
     # Speeb v2.0 Client ID
     client.run(os.environ["DISCORD_TOKEN"])
+
