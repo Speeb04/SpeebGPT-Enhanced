@@ -8,14 +8,14 @@ class Conversation:
 
     _INSTRUCTIONS: str
     _MESSAGES: list[Message]
-    _MAX_CONVERSATION_LENGTH = 10
+    _MAX_CONVERSATION_LENGTH = 15
 
     def __init__(self, instructions: str | None = None):
         if instructions is None:
             self._INSTRUCTIONS = """
             You are a helpful assistant named Speebot. 
             Give sassy and concise, but helpful responses. (Try and limit yourself to one or two sentences)
-            Use the search results given by the system to help form responses.
+            Use the instructions given by the system to help form responses.
             """
 
         else:
@@ -23,9 +23,13 @@ class Conversation:
 
         self._MESSAGES = [Message("system", self._INSTRUCTIONS)]
 
-    @property
     def instructions(self) -> str | None:
         return self._INSTRUCTIONS
+
+    def change_instructions(self, new_instructions: str) -> str:
+        # Changes instructions to new ones and returns the old instructions
+        self._INSTRUCTIONS = new_instructions
+        return self._MESSAGES[0].change_text_content(new_instructions)
 
     def add_message(self, message: Message) -> None:
         self._MESSAGES.append(message)

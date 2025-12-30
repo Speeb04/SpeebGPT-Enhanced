@@ -12,6 +12,7 @@ class Message:
     # Images and files attachments
     images: list[Image] | None
     files: list[File] | None
+    text_content: str
 
     def __init__(self, role: str, text_content: str,
                  images: list[Image] = None, files: list[File] = None):
@@ -35,6 +36,14 @@ class Message:
 
     def has_files(self):
         return self.files is not None
+
+    # THIS METHOD SHOULD ONLY BE USED FOR CHANGING THE INSTRUCTIONS
+    def change_text_content(self, new_content: str) -> str:
+        # returns the previous text content
+        old_content = self.text_content
+        self.text_content = new_content
+
+        return old_content
 
     # helper functions for to_dict
     def _files_to_dict_list(self) -> list[dict]:
