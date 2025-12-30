@@ -491,10 +491,25 @@ async def create_logical_response(discord_message: discord.Message, conversation
     # Send model change notification
     await discord_message.channel.send(f"> 💭 Switching to high reasoning model...")
 
+    # Change instructions to allow for longer response
+    longer_instructions = """
+    You are a helpful assistant named Speebot.
+    Give sassy and concise, but helpful responses. (Try and limit yourself to under 500 words.)
+    Use the instructions given by the system to help form responses.
+    """
+    conversation.change_instructions(longer_instructions)
+
     # change to high reasoning
     openai_gateway.change_reasoning("high")
     response = await run_blocking(get_openai_response, conversation)
     openai_gateway.change_reasoning("low")
+
+    # Return instructions to the original
+    original_instructions = """
+    You are a helpful assistant named Speebot. Give sassy and concise, but helpful responses 
+    (Try and limit yourself to at most around 2 to 3 sentences). Use the instructions given by the system to help form responses.
+    """
+    conversation.change_instructions(original_instructions)
 
     if check_for_explicit_content(response):
         raise ExplicitOutputException("Harmful content detected")
